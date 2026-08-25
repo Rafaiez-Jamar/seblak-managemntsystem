@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#1c1210"/>
+
+  <!-- Steam kiri -->
+  <path d="M22 14 Q20 10 22 6 Q24 2 22 0" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Steam tengah -->
+  <path d="M32 14 Q30 10 32 6 Q34 2 32 0" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <!-- Steam kanan -->
+  <path d="M42 14 Q40 10 42 6 Q44 2 42 0" stroke="white" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <!-- Mangkuk badan -->
+  <path d="M10 28 Q10 50 32 52 Q54 50 54 28 Z" fill="#2a1a15" stroke="white" stroke-width="2"/>
+  <!-- Bibir mangkuk -->
+  <ellipse cx="32" cy="28" rx="22" ry="5" fill="#2a1a15" stroke="white" stroke-width="2"/>
+  <!-- Kaki mangkuk -->
+  <ellipse cx="32" cy="52" rx="10" ry="2.5" fill="#2a1a15" stroke="white" stroke-width="1.8"/>
+
+  <!-- Mi / noodle -->
+  <path d="M16 30 Q22 26 28 30 Q34 34 40 30 Q46 26 50 30" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M14 35 Q20 31 26 35 Q32 39 38 35 Q44 31 50 35" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Cabe merah -->
+  <ellipse cx="24" cy="33" rx="4" ry="2.5" fill="#e85d2f" transform="rotate(-20 24 33)"/>
+  <ellipse cx="42" cy="32" rx="4" ry="2.5" fill="#e85d2f" transform="rotate(15 42 32)"/>
+</svg>

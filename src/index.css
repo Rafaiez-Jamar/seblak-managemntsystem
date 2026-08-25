@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Base palette — charred pot ─── */
+  --color-base:      #160e0b;
+  --color-surface:   #1e1310;
+  --color-surface-2: #271810;
+  --color-surface-3: #331f14;
+
+  /* ─── Ink ─── */
+  --color-ink:       #f5ede3;
+  --color-ink-muted: #b8a494;
+  --color-ink-faint: #7a6557;
+
+  /* ─── Chili (primary accent) ─── */
+  --color-chili:       #d44025;
+  --color-chili-hover: #e84e30;
+  --color-chili-bg:    rgba(212, 64, 37, 0.12);
+  --color-chili-glow:  rgba(212, 64, 37, 0.25);
+
+  /* ─── Herb (success / pemasukan) ─── */
+  --color-herb:    #6a9e42;
+  --color-herb-bg: rgba(106, 158, 66, 0.12);
+  --color-herb-glow: rgba(106, 158, 66, 0.2);
+
+  /* ─── Turmeric (warning / bonus) ─── */
+  --color-turmeric:    #d4922a;
+  --color-turmeric-bg: rgba(212, 146, 42, 0.12);
+  --color-turmeric-glow: rgba(212, 146, 42, 0.2);
+
+  /* ─── Lines ─── */
+  --color-line:        rgba(245, 237, 227, 0.07);
+  --color-line-strong: rgba(245, 237, 227, 0.14);
+
+  /* ─── Typography ─── */
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-sans:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+
+/* ─── Color scheme ─── */
+:root { color-scheme: dark; }
+
+/* ─── Reset ─── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-base);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100svh; }
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+/* ─── Ledger numbers ─── */
+.ledger-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: var(--color-chili-bg);
+  color: var(--color-ink);
+}
+
+/* ─── Focus ring ─── */
+:focus-visible {
+  outline: 2px solid var(--color-chili);
+  outline-offset: 2px;
+}
+
+/* ─── Custom scrollbar ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 237, 227, 0.1);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 237, 227, 0.2);
+}
+
+/* ─── Glassmorphism card ─── */
+.glass {
+  background: rgba(30, 19, 16, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ─── Gradient text utility ─── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-chili), var(--color-turmeric));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--color-chili-glow); }
+  50%       { box-shadow: 0 0 20px var(--color-chili-glow); }
+}
+
+/* Animation utility classes */
+.animate-fade-in    { animation: fadeIn    0.35s ease forwards; }
+.animate-slide-up   { animation: slideUp   0.35s ease forwards; }
+.animate-slide-left { animation: slideInLeft 0.3s ease forwards; }
+.animate-scale-in  { animation: scaleIn   0.25s ease forwards; }
+
+/* Staggered children */
+.stagger > * { opacity: 0; animation: slideUp 0.35s ease forwards; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+
+/* Loading skeleton shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 25%,
+    var(--color-surface-3) 50%,
+    var(--color-surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* ─── Reduced motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

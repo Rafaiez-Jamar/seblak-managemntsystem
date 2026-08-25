@@ -1,0 +1,17 @@
+{
+  "name": "Seblak HQ - Manajemen Internal",
+  "short_name": "Seblak HQ",
+  "description": "Sistem manajemen internal untuk barang, keuangan, dan gaji rumah makan seblak.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1210",
+  "theme_color": "#1c1210",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
