@@ -1,5 +1,5 @@
-import { PackagePlus, Plus, Trash2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { PackagePlus, Plus, Trash2, X, Pencil } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import CurrencyInput from '../components/CurrencyInput'
 import EmptyState from '../components/EmptyState'
 import { supabase } from '../lib/supabase'
@@ -42,6 +42,7 @@ export default function Inventory() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState(null)
 
   async function fetchItems() {
     setLoading(true)
@@ -57,6 +58,27 @@ export default function Inventory() {
 
   useEffect(() => { fetchItems() }, [])
 
+  // Mengelompokkan dan menjumlahkan stok barang masuk berdasarkan Nama Barang & Satuan
+  const stockSummary = useMemo(() => {
+    const summary = {}
+    items.forEach((item) => {
+      // Kelompokkan case-insensitive dan bersihkan spasi
+      const namaBersih = item.nama_barang.trim().toLowerCase()
+      const key = `${namaBersih}_${item.satuan}`
+      if (!summary[key]) {
+        summary[key] = {
+          nama_barang: item.nama_barang, // simpan nama asli
+          satuan: item.satuan,
+          jumlah: 0,
+          kategori: item.kategori,
+        }
+      }
+      summary[key].jumlah += Number(item.jumlah)
+    })
+    // Urutkan berdasarkan nama barang
+    return Object.values(summary).sort((a, b) => a.nama_barang.localeCompare(b.nama_barang))
+  }, [items])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
@@ -70,13 +92,22 @@ export default function Inventory() {
       harga_total: form.harga_total ? Number(form.harga_total) : null,
       catatan: form.catatan.trim() || null,
     }
-    const { error: insertError } = await supabase.from('barang_masuk').insert(payload)
-    if (insertError) setError(insertError.message)
-    else { setForm(EMPTY_FORM); setShowForm(false); await fetchItems() }
+    const { error: submitError } = editingId
+      ? await supabase.from('barang_masuk').update(payload).eq('id', editingId)
+      : await supabase.from('barang_masuk').insert(payload)
+
+    if (submitError) setError(submitError.message)
+    else {
+      setForm(EMPTY_FORM)
+      setEditingId(null)
+      setShowForm(false)
+      await fetchItems()
+    }
     setSaving(false)
   }
 
   async function handleDelete(id) {
+    if (!confirm('Apakah kamu yakin ingin menghapus catatan barang ini?')) return
     const { error: deleteError } = await supabase.from('barang_masuk').delete().eq('id', id)
     if (deleteError) setError(deleteError.message)
     else setItems((prev) => prev.filter((item) => item.id !== id))
@@ -197,17 +228,46 @@ export default function Inventory() {
               />
             </div>
 
-            <div className="sm:col-span-2 lg:col-span-3">
+            <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
               <button
                 type="submit"
                 disabled={saving}
                 className="rounded-xl bg-gradient-to-r from-chili to-chili-hover px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-chili/25 transition-all hover:scale-[1.02] hover:shadow-chili/40 active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
               >
-                {saving ? 'Menyimpan...' : 'Simpan Barang'}
+                {saving ? 'Menyimpan...' : editingId ? 'Perbarui Barang' : 'Simpan Barang'}
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm(EMPTY_FORM)
+                    setEditingId(null)
+                    setShowForm(false)
+                  }}
+                  className="rounded-xl border border-line bg-surface-2 px-5 py-2.5 text-sm font-medium text-ink-muted hover:bg-surface-3 transition-all"
+                >
+                  Batal
+                </button>
+              )}
             </div>
           </div>
         </form>
+      )}
+
+      {/* Ringkasan Saldo Stok (Akumulasi) */}
+      {!loading && stockSummary.length > 0 && (
+        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-5 space-y-3">
+          <h3 className="font-display text-sm tracking-wide text-ink-muted">📊 Estimasi Saldo Bahan Baku (Akumulasi)</h3>
+          <div className="flex flex-wrap gap-2">
+            {stockSummary.map((stock) => (
+              <div key={`${stock.nama_barang}_${stock.satuan}`} className="flex items-center gap-2 rounded-xl bg-surface-2/70 px-3.5 py-2 border border-line shadow-sm hover:border-line-strong transition-all">
+                <span className="text-sm font-medium text-ink capitalize">{stock.nama_barang}</span>
+                <span className="text-xs text-ink-faint">|</span>
+                <span className="ledger-num text-sm font-semibold text-herb">{formatKuantitas(stock.jumlah, stock.satuan)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Table / empty */}
@@ -254,15 +314,37 @@ export default function Inventory() {
                   <td className="px-5 py-3.5 ledger-num text-ink-muted">
                     {item.harga_total ? formatRupiah(item.harga_total) : '—'}
                   </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item.id)}
-                      aria-label="Hapus"
-                      className="rounded-lg p-1.5 text-ink-faint transition-all hover:bg-chili/10 hover:text-chili"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                   <td className="px-5 py-3.5 text-right">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm({
+                            tanggal: item.tanggal,
+                            kategori: item.kategori,
+                            nama_barang: item.nama_barang,
+                            jumlah: String(item.jumlah),
+                            satuan: item.satuan,
+                            harga_total: item.harga_total ? String(item.harga_total) : '',
+                            catatan: item.catatan ?? '',
+                          })
+                          setEditingId(item.id)
+                          setShowForm(true)
+                        }}
+                        aria-label="Edit"
+                        className="rounded-lg p-1.5 text-ink-faint transition-all hover:bg-surface-3 hover:text-ink"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        aria-label="Hapus"
+                        className="rounded-lg p-1.5 text-ink-faint transition-all hover:bg-chili/10 hover:text-chili"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

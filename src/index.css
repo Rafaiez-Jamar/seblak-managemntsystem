@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── Base palette — charred pot ─── */
-  --color-base:      #160e0b;
-  --color-surface:   #1e1310;
-  --color-surface-2: #271810;
-  --color-surface-3: #331f14;
+  /* ─── Base palette — Premium Dark Slate ─── */
+  --color-base:      #0a0e17; /* Slate ultra gelap */
+  --color-surface:   #111827; /* Slate 900 */
+  --color-surface-2: #1f2937; /* Slate 800 */
+  --color-surface-3: #374151; /* Slate 700 */
 
-  /* ─── Ink ─── */
-  --color-ink:       #f5ede3;
-  --color-ink-muted: #b8a494;
-  --color-ink-faint: #7a6557;
+  /* ─── Ink (High Contrast Text) ─── */
+  --color-ink:       #f9fafb; /* Slate 50 (Putih bersih) */
+  --color-ink-muted: #d1d5db; /* Slate 300 (Abu-abu terang) */
+  --color-ink-faint: #9ca3af; /* Slate 400 (Abu-abu sedang) */
 
-  /* ─── Chili (primary accent) ─── */
-  --color-chili:       #d44025;
-  --color-chili-hover: #e84e30;
-  --color-chili-bg:    rgba(212, 64, 37, 0.12);
-  --color-chili-glow:  rgba(212, 64, 37, 0.25);
+  /* ─── Chili (Primary Red Accent) ─── */
+  --color-chili:       #ef4444; /* Merah cerah */
+  --color-chili-hover: #f87171;
+  --color-chili-bg:    rgba(239, 68, 68, 0.12);
+  --color-chili-glow:  rgba(239, 68, 68, 0.25);
 
-  /* ─── Herb (success / pemasukan) ─── */
-  --color-herb:    #6a9e42;
-  --color-herb-bg: rgba(106, 158, 66, 0.12);
-  --color-herb-glow: rgba(106, 158, 66, 0.2);
+  /* ─── Herb (Success Green) ─── */
+  --color-herb:    #10b981; /* Hijau zamrud cerah */
+  --color-herb-bg: rgba(16, 185, 129, 0.12);
+  --color-herb-glow: rgba(16, 185, 129, 0.2);
 
-  /* ─── Turmeric (warning / bonus) ─── */
-  --color-turmeric:    #d4922a;
-  --color-turmeric-bg: rgba(212, 146, 42, 0.12);
-  --color-turmeric-glow: rgba(212, 146, 42, 0.2);
+  /* ─── Turmeric (Warning Yellow) ─── */
+  --color-turmeric:    #f59e0b; /* Kuning kunyit/amber cerah */
+  --color-turmeric-bg: rgba(245, 158, 11, 0.12);
+  --color-turmeric-glow: rgba(245, 158, 11, 0.2);
 
   /* ─── Lines ─── */
-  --color-line:        rgba(245, 237, 227, 0.07);
-  --color-line-strong: rgba(245, 237, 227, 0.14);
+  --color-line:        rgba(255, 255, 255, 0.06);
+  --color-line-strong: rgba(255, 255, 255, 0.12);
 
   /* ─── Typography ─── */
   --font-display: 'Fraunces', 'Georgia', serif;

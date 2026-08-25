@@ -60,9 +60,25 @@ function SkeletonCard() {
   )
 }
 
+function dapatkanStatusStok(jumlah, satuan) {
+  const s = satuan.toLowerCase()
+  if (s === 'kg' || s === 'liter') {
+    if (jumlah >= 20) return { label: 'Stok Melimpah', color: 'text-herb bg-herb-bg border-herb/20' }
+    if (jumlah >= 5) return { label: 'Stok Stabil', color: 'text-turmeric bg-turmeric-bg border-turmeric/20' }
+    return { label: 'Stok Minim', color: 'text-chili bg-chili-bg border-chili/20' }
+  }
+  if (s === 'butir' || s === 'gram' || s === 'ml' || s === 'pcs') {
+    if (jumlah >= 150) return { label: 'Stok Melimpah', color: 'text-herb bg-herb-bg border-herb/20' }
+    if (jumlah >= 40) return { label: 'Stok Stabil', color: 'text-turmeric bg-turmeric-bg border-turmeric/20' }
+    return { label: 'Stok Minim', color: 'text-chili bg-chili-bg border-chili/20' }
+  }
+  return { label: 'Tersedia', color: 'text-ink-muted bg-surface-3 border-line' }
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState({ pemasukan: 0, pengeluaran: 0, totalKaryawan: null, barangMasuk: null })
   const [chartData, setChartData] = useState([])
+  const [stockAnalysis, setStockAnalysis] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -74,18 +90,42 @@ export default function Dashboard() {
       const [transaksiRes, karyawanRes, barangRes, chartRes] = await Promise.all([
         supabase.from('transaksi_keuangan').select('jenis, jumlah').gte('tanggal', awal).lt('tanggal', akhir),
         supabase.from('karyawan').select('id', { count: 'exact', head: true }).eq('status', 'aktif'),
-        supabase.from('barang_masuk').select('id', { count: 'exact', head: true }).gte('tanggal', awal).lt('tanggal', akhir),
+        supabase.from('barang_masuk').select('nama_barang, jumlah, satuan, kategori').gte('tanggal', awal).lt('tanggal', akhir),
         supabase.from('transaksi_keuangan').select('jenis, jumlah, tanggal')
           .gte('tanggal', `${bulanList[0].tahun}-${String(bulanList[0].bulan).padStart(2, '0')}-01`)
           .lt('tanggal', akhir),
       ])
+
+      const rawBarang = barangRes.data ?? []
 
       let pemasukan = 0, pengeluaran = 0
       for (const t of transaksiRes.data ?? []) {
         if (t.jenis === 'pemasukan') pemasukan += Number(t.jumlah)
         else pengeluaran += Number(t.jumlah)
       }
-      setStats({ pemasukan, pengeluaran, totalKaryawan: karyawanRes.count ?? 0, barangMasuk: barangRes.count ?? 0 })
+      setStats({
+        pemasukan,
+        pengeluaran,
+        totalKaryawan: karyawanRes.count ?? 0,
+        barangMasuk: rawBarang.length
+      })
+
+      // Akumulasi stok barang masuk
+      const stockGroups = {}
+      rawBarang.forEach((b) => {
+        const key = `${b.nama_barang.trim().toLowerCase()}_${b.satuan}`
+        if (!stockGroups[key]) {
+          stockGroups[key] = {
+            nama: b.nama_barang,
+            satuan: b.satuan,
+            jumlah: 0,
+            kategori: b.kategori,
+          }
+        }
+        stockGroups[key].jumlah += Number(b.jumlah)
+      })
+      const stockArray = Object.values(stockGroups).sort((a, b) => b.jumlah - a.jumlah)
+      setStockAnalysis(stockArray)
 
       const byBulan = {}
       for (const t of chartRes.data ?? []) {
@@ -148,21 +188,67 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} barCategoryGap="35%" barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,237,227,0.05)" vertical={false} />
-              <XAxis dataKey="bulan" tick={{ fontSize: 11, fill: '#7a6557' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="bulan" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <YAxis
-                tick={{ fontSize: 11, fill: '#7a6557' }}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : v}
                 width={42}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(245,237,227,0.03)' }} />
-              <Bar dataKey="Pemasukan" fill="#6a9e42" radius={[5, 5, 0, 0]} maxBarSize={28} />
-              <Bar dataKey="Pengeluaran" fill="#d44025" radius={[5, 5, 0, 0]} maxBarSize={28} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+              <Bar dataKey="Pemasukan" fill="#10b981" radius={[5, 5, 0, 0]} maxBarSize={28} />
+              <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[5, 5, 0, 0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Analisis Stok Bahan Baku */}
+      {!loading && stockAnalysis.length > 0 && (
+        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-6 space-y-4">
+          <div>
+            <h3 className="font-display text-base">📊 Status &amp; Analisis Stok Bahan Baku</h3>
+            <p className="text-xs text-ink-muted mt-0.5">Ringkasan estimasi total volume barang masuk bulan ini</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {stockAnalysis.map((stock) => {
+              const status = dapatkanStatusStok(stock.jumlah, stock.satuan)
+              const maxQty = Math.max(...stockAnalysis.map(s => s.jumlah), 1)
+              const visualPercent = Math.min(100, Math.max(12, (stock.jumlah / maxQty) * 100))
+
+              return (
+                <div key={`${stock.nama}_${stock.satuan}`} className="rounded-xl border border-line bg-surface-2/40 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-ink capitalize">{stock.nama}</p>
+                      <p className="text-[10px] text-ink-faint uppercase tracking-wider mt-0.5">{stock.kategori.replace('_', ' ')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="ledger-num text-sm font-bold text-ink">{stock.jumlah.toLocaleString('id-ID')} {stock.satuan}</p>
+                      <span className={`inline-block rounded-full border px-2 py-0.5 text-[9px] font-medium mt-1 ${status.color}`}>
+                        {status.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Custom Progress Bar */}
+                  <div className="h-1.5 w-full bg-surface-3 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${
+                        status.label === 'Stok Melimpah' ? 'from-herb to-emerald-400' :
+                        status.label === 'Stok Stabil' ? 'from-turmeric to-amber-400' :
+                        'from-chili to-rose-400'
+                      }`}
+                      style={{ width: `${visualPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Untung bersih */}
       {!loading && (
