@@ -1,4 +1,4 @@
-import { PackagePlus, Plus, Trash2, X, Pencil } from 'lucide-react'
+import { AlertTriangle, Boxes, CalendarDays, CircleDollarSign, PackagePlus, Plus, Trash2, X, Pencil } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import CurrencyInput from '../components/CurrencyInput'
 import EmptyState from '../components/EmptyState'
@@ -30,10 +30,22 @@ const EMPTY_FORM = {
   jumlah: '',
   satuan: 'kg',
   harga_total: '',
+  tanggal_expired: '',
   catatan: '',
 }
 
 const inputCls = 'w-full rounded-xl border border-line bg-surface-2/80 px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-faint transition-all focus:border-chili/50 focus:ring-2 focus:ring-chili/10'
+
+function statusExpired(tanggalExpired) {
+  if (!tanggalExpired) return null
+  const hariIni = new Date()
+  hariIni.setHours(0, 0, 0, 0)
+  const expired = new Date(`${tanggalExpired}T00:00:00`)
+  const selisihHari = Math.ceil((expired - hariIni) / 86400000)
+  if (selisihHari < 0) return { label: 'Sudah expired', tone: 'text-chili bg-chili-bg border-chili/30', urgent: true, days: selisihHari }
+  if (selisihHari <= 7) return { label: `Expired ${selisihHari} hari lagi`, tone: 'text-turmeric bg-turmeric-bg border-turmeric/30', urgent: true, days: selisihHari }
+  return { label: 'Masih aman', tone: 'text-herb bg-herb-bg border-herb/20', urgent: false, days: selisihHari }
+}
 
 export default function Inventory() {
   const [items, setItems] = useState([])
@@ -79,6 +91,17 @@ export default function Inventory() {
     return Object.values(summary).sort((a, b) => a.nama_barang.localeCompare(b.nama_barang))
   }, [items])
 
+  const inventoryStats = useMemo(() => ({
+    totalCatatan: items.length,
+    kategoriAktif: new Set(items.map((item) => item.kategori)).size,
+    totalBelanja: items.reduce((sum, item) => sum + Number(item.harga_total ?? 0), 0),
+  }), [items])
+
+  const expiredAlerts = useMemo(() => items
+    .map((item) => ({ ...item, expiredStatus: statusExpired(item.tanggal_expired) }))
+    .filter((item) => item.expiredStatus?.urgent)
+    .sort((a, b) => a.expiredStatus.days - b.expiredStatus.days), [items])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
@@ -90,6 +113,7 @@ export default function Inventory() {
       jumlah: Number(form.jumlah),
       satuan: form.satuan,
       harga_total: form.harga_total ? Number(form.harga_total) : null,
+      tanggal_expired: form.tanggal_expired || null,
       catatan: form.catatan.trim() || null,
     }
     const { error: submitError } = editingId
@@ -133,11 +157,33 @@ export default function Inventory() {
         </button>
       </div>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: 'Catatan stok', value: inventoryStats.totalCatatan, suffix: 'transaksi', icon: Boxes, tone: 'text-herb', bg: 'bg-herb-bg' },
+          { label: 'Kategori aktif', value: inventoryStats.kategoriAktif, suffix: 'kategori', icon: CalendarDays, tone: 'text-turmeric', bg: 'bg-turmeric-bg' },
+          { label: 'Total belanja tercatat', value: formatRupiah(inventoryStats.totalBelanja), suffix: 'bulan ini', icon: CircleDollarSign, tone: 'text-chili', bg: 'bg-chili-bg' },
+        ].map(({ label, value, suffix, icon: Icon, tone, bg }) => (
+          <div key={label} className="relative overflow-hidden rounded-2xl border border-line bg-surface/60 p-4 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${tone}`}><Icon size={18} /></span>
+              <div className="min-w-0"><p className="truncate text-[10px] uppercase tracking-wider text-ink-faint">{label}</p><p className={`ledger-num mt-1 truncate text-lg font-bold ${tone}`}>{value} <span className="font-sans text-[10px] font-normal text-ink-faint">{suffix}</span></p></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Error */}
       {error && (
         <p className="rounded-xl border border-chili/20 bg-chili/10 px-4 py-3 text-sm text-chili">
           {error}
         </p>
+      )}
+
+      {expiredAlerts.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-turmeric/30 bg-gradient-to-r from-turmeric/15 via-turmeric-bg to-transparent px-4 py-4 text-sm">
+          <AlertTriangle size={19} className="mt-0.5 shrink-0 text-turmeric" />
+          <div className="min-w-0"><p className="font-semibold text-ink">Perhatian tanggal kedaluwarsa</p><p className="mt-1 text-xs leading-relaxed text-ink-muted">{expiredAlerts.length} barang perlu dicek: {expiredAlerts.slice(0, 3).map((item) => `${item.nama_barang} (${item.expiredStatus.label.toLowerCase()})`).join(', ')}{expiredAlerts.length > 3 ? ', dan lainnya.' : '.'}</p></div>
+        </div>
       )}
 
       {/* Form */}
@@ -218,6 +264,16 @@ export default function Inventory() {
               />
             </div>
 
+            <div>
+              <label className="mb-1.5 block text-xs text-ink-faint">Tanggal Expired (opsional)</label>
+              <input
+                type="date"
+                value={form.tanggal_expired}
+                onChange={(e) => setForm({ ...form, tanggal_expired: e.target.value })}
+                className={inputCls}
+              />
+            </div>
+
             <div className="sm:col-span-2 lg:col-span-3">
               <label className="mb-1.5 block text-xs text-ink-faint">Catatan (opsional)</label>
               <input
@@ -256,14 +312,16 @@ export default function Inventory() {
 
       {/* Ringkasan Saldo Stok (Akumulasi) */}
       {!loading && stockSummary.length > 0 && (
-        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-5 space-y-3">
-          <h3 className="font-display text-sm tracking-wide text-ink-muted">📊 Estimasi Saldo Bahan Baku (Akumulasi)</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="relative overflow-hidden rounded-2xl border border-herb/20 bg-gradient-to-r from-herb/10 via-surface/80 to-surface/60 p-5">
+          <div className="relative mb-4 flex items-center justify-between gap-3">
+            <div><p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-herb/70">Live inventory</p><h3 className="font-display text-base">Saldo bahan baku</h3></div>
+            <span className="rounded-full border border-herb/20 bg-herb-bg px-2.5 py-1 text-[10px] text-herb">{stockSummary.length} jenis</span>
+          </div>
+          <div className="relative grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {stockSummary.map((stock) => (
-              <div key={`${stock.nama_barang}_${stock.satuan}`} className="flex items-center gap-2 rounded-xl bg-surface-2/70 px-3.5 py-2 border border-line shadow-sm hover:border-line-strong transition-all">
-                <span className="text-sm font-medium text-ink capitalize">{stock.nama_barang}</span>
-                <span className="text-xs text-ink-faint">|</span>
-                <span className="ledger-num text-sm font-semibold text-herb">{formatKuantitas(stock.jumlah, stock.satuan)}</span>
+              <div key={`${stock.nama_barang}_${stock.satuan}`} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface/70 px-3.5 py-3 transition-all hover:border-herb/30">
+                <span className="truncate text-sm font-medium capitalize text-ink">{stock.nama_barang}</span>
+                <span className="ledger-num shrink-0 text-sm font-semibold text-herb">{formatKuantitas(stock.jumlah, stock.satuan)}</span>
               </div>
             ))}
           </div>
@@ -284,7 +342,9 @@ export default function Inventory() {
           description="Setiap kali barang datang, catat di sini: jenis, jumlah, dan sumbernya."
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface/60 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface/60 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4"><div><p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-ink-faint">Riwayat penerimaan</p><h3 className="font-display text-base">Barang masuk terbaru</h3></div><span className="text-xs text-ink-faint">{items.length} catatan</span></div>
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line bg-surface-2/80">
@@ -292,6 +352,7 @@ export default function Inventory() {
                 <th className="px-5 py-3.5 text-xs font-normal uppercase tracking-widest text-ink-faint">Kategori</th>
                 <th className="px-5 py-3.5 text-xs font-normal uppercase tracking-widest text-ink-faint">Barang</th>
                 <th className="px-5 py-3.5 text-xs font-normal uppercase tracking-widest text-ink-faint">Jumlah</th>
+                <th className="px-5 py-3.5 text-xs font-normal uppercase tracking-widest text-ink-faint">Expired</th>
                 <th className="px-5 py-3.5 text-xs font-normal uppercase tracking-widest text-ink-faint">Harga</th>
                 <th className="px-5 py-3.5" />
               </tr>
@@ -311,6 +372,9 @@ export default function Inventory() {
                   <td className="px-5 py-3.5 ledger-num text-ink-muted">
                     {formatKuantitas(item.jumlah, item.satuan)}
                   </td>
+                  <td className="px-5 py-3.5">
+                    {item.tanggal_expired ? <div><p className="ledger-num text-xs text-ink-muted">{formatTanggal(item.tanggal_expired)}</p><span className={`mt-1 inline-block rounded-full border px-2 py-0.5 text-[9px] ${statusExpired(item.tanggal_expired)?.tone}`}>{statusExpired(item.tanggal_expired)?.label}</span></div> : <span className="text-xs text-ink-faint">Belum diisi</span>}
+                  </td>
                   <td className="px-5 py-3.5 ledger-num text-ink-muted">
                     {item.harga_total ? formatRupiah(item.harga_total) : '—'}
                   </td>
@@ -326,6 +390,7 @@ export default function Inventory() {
                             jumlah: String(item.jumlah),
                             satuan: item.satuan,
                             harga_total: item.harga_total ? String(item.harga_total) : '',
+                            tanggal_expired: item.tanggal_expired ?? '',
                             catatan: item.catatan ?? '',
                           })
                           setEditingId(item.id)
@@ -350,6 +415,7 @@ export default function Inventory() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
