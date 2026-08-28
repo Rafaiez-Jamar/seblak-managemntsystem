@@ -1,5 +1,6 @@
 import { ArrowUpRight, CircleDollarSign, Mail, Pencil, Plus, Sparkles, Trash2, Users, WalletCards, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import CurrencyInput from '../components/CurrencyInput'
 import EmptyState from '../components/EmptyState'
 import { supabase } from '../lib/supabase'
 import { formatRupiah } from '../lib/helpers'
