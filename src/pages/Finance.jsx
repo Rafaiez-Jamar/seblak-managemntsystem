@@ -1,6 +1,7 @@
 import CurrencyInput from '../components/CurrencyInput'
 import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Download, Plus, TrendingDown, TrendingUp, Wallet, X, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Line, LineChart, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts'
 import EmptyState from '../components/EmptyState'
 import { supabase } from '../lib/supabase'
 import { formatRupiah, formatTanggal } from '../lib/helpers'
@@ -160,6 +161,30 @@ export default function Finance() {
     return { hari: calculate(startOfToday), minggu: calculate(startOfWeek), bulan: calculate(startOfMonth) }
   }, [items])
 
+  const sparklineData = useMemo(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today)
+      date.setDate(today.getDate() - (6 - index))
+      const key = date.toISOString().slice(0, 10)
+      return {
+        day: key,
+        pemasukan: items.filter((item) => item.tanggal === key && item.jenis === 'pemasukan').reduce((sum, item) => sum + Number(item.jumlah), 0),
+        pengeluaran: items.filter((item) => item.tanggal === key && item.jenis === 'pengeluaran').reduce((sum, item) => sum + Number(item.jumlah), 0),
+      }
+    })
+  }, [items])
+
+  function trendLabel(values) {
+    const previous = values.slice(0, 3).reduce((sum, value) => sum + value, 0)
+    const recent = values.slice(-3).reduce((sum, value) => sum + value, 0)
+    if (previous === 0 && recent === 0) return 'Belum ada aktivitas'
+    if (previous === 0) return 'Mulai tercatat minggu ini'
+    const percent = Math.round(((recent - previous) / previous) * 100)
+    return `${percent >= 0 ? '+' : ''}${percent}% vs awal minggu`
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
@@ -254,17 +279,18 @@ export default function Finance() {
           <p className={`ledger-num relative mt-8 text-3xl font-bold ${summary.bersih >= 0 ? 'text-herb' : 'text-chili'}`}>{formatRupiah(summary.bersih)}</p>
           <p className="relative mt-2 text-xs text-ink-faint">{summary.bersih >= 0 ? 'Posisi keuangan masih positif.' : 'Pengeluaran lebih besar dari pemasukan.'}</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {[
-            { label: 'Total pemasukan', value: summary.pemasukan, icon: TrendingUp, iconClass: 'bg-herb-bg text-herb', textClass: 'text-herb', IconMark: ArrowUpRight },
-            { label: 'Total pengeluaran', value: summary.pengeluaran, icon: TrendingDown, iconClass: 'bg-chili-bg text-chili', textClass: 'text-chili', IconMark: ArrowDownRight },
-            { label: 'Margin bersih', value: summary.pemasukan > 0 ? `${Math.round((summary.bersih / summary.pemasukan) * 100)}%` : '0%', icon: Wallet, iconClass: 'bg-turmeric-bg text-turmeric', textClass: 'text-turmeric', IconMark: CircleDollarSign, isText: true },
-          ].map(({ label, value, icon: Icon, iconClass, textClass, IconMark, isText }) => (
-            <div key={label} className={`relative overflow-hidden rounded-2xl border border-line bg-surface/60 p-5 backdrop-blur-sm`}>
-              <div className="flex items-center justify-between"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconClass}`}><Icon size={17} /></span><IconMark size={15} className={textClass} /></div>
-              <p className={`ledger-num mt-7 text-xl font-bold ${textClass}`}>{isText ? value : formatRupiah(value)}</p><p className="mt-1 text-xs text-ink-faint">{label}</p>
+            { label: 'Total pemasukan', value: summary.pemasukan, color: '#10b981', tone: 'text-herb', Icon: TrendingUp, dataKey: 'pemasukan' },
+            { label: 'Total pengeluaran', value: summary.pengeluaran, color: '#ef4444', tone: 'text-chili', Icon: TrendingDown, dataKey: 'pengeluaran' },
+          ].map(({ label, value, color, tone, Icon, dataKey }) => (
+            <div key={label} className="relative overflow-hidden rounded-2xl border border-line bg-surface/60 p-4 backdrop-blur-sm">
+              <div className="flex items-start justify-between"><div><p className="text-[10px] uppercase tracking-wider text-ink-faint">{label}</p><p className={`ledger-num mt-2 text-xl font-bold ${tone}`}>{formatRupiah(value)}</p></div><span className={`rounded-lg bg-surface-2 p-2 ${tone}`}><Icon size={16} /></span></div>
+              <div className="mt-2 flex items-center justify-between gap-2"><p className={`truncate text-[10px] ${tone}`}>{trendLabel(sparklineData.map((point) => point[dataKey]))}</p><div className="h-12 w-24 shrink-0"><ResponsiveContainer width="100%" height="100%"><LineChart data={sparklineData}><ChartTooltip content={() => null} /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} activeDot={false} /></LineChart></ResponsiveContainer></div></div>
+              <p className="mt-1 text-[10px] text-ink-faint">7 hari terakhir</p>
             </div>
           ))}
+          <div className="relative overflow-hidden rounded-2xl border border-line bg-surface/60 p-4 backdrop-blur-sm sm:col-span-2"><div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wider text-ink-faint">Margin bersih</p><p className="ledger-num mt-2 text-xl font-bold text-turmeric">{summary.pemasukan > 0 ? `${Math.round((summary.bersih / summary.pemasukan) * 100)}%` : '0%'}</p></div><span className="rounded-lg bg-turmeric-bg p-2 text-turmeric"><Wallet size={16} /></span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-3"><div className={`h-full rounded-full ${summary.bersih >= 0 ? 'bg-turmeric' : 'bg-chili'}`} style={{ width: `${Math.min(100, Math.max(4, summary.pemasukan ? (summary.bersih / summary.pemasukan) * 100 : 0))}%` }} /></div><p className="mt-2 text-[10px] text-ink-faint">Persentase omzet yang menjadi saldo bersih</p></div>
         </div>
       </div>
 

@@ -19,8 +19,12 @@ export async function enablePushNotifications(userId) {
     throw new Error('Browser ini belum mendukung push notification.')
   }
 
-  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
+  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY?.trim()
   if (!vapidKey) throw new Error('VITE_VAPID_PUBLIC_KEY belum diset di .env.')
+  const applicationServerKey = urlBase64ToUint8Array(vapidKey)
+  if (applicationServerKey.byteLength !== 65) {
+    throw new Error('VAPID public key tidak valid. Generate ulang pasangan VAPID key dan salin Public Key lengkap.')
+  }
 
   const permission = await withTimeout(
     Notification.requestPermission(),
@@ -37,7 +41,7 @@ export async function enablePushNotifications(userId) {
     subscription = await withTimeout(
       registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey,
       }),
       'Browser gagal membuat subscription notifikasi.',
     )

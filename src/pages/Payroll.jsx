@@ -1,4 +1,4 @@
-import { Plus, Sparkles, Trash2, Users, X } from 'lucide-react'
+import { ArrowUpRight, CircleDollarSign, Plus, Sparkles, Trash2, Users, WalletCards, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import EmptyState from '../components/EmptyState'
 import { supabase } from '../lib/supabase'
@@ -116,7 +116,8 @@ export default function Payroll() {
     <div className="space-y-6 animate-slide-up">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl">Slip Gaji</h2>
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Pusat payroll</p>
+          <h2 className="font-display text-3xl">Slip Gaji</h2>
           <p className="mt-1 text-sm text-ink-muted">
             Gaji pokok tetap + bonus dari sisa untung bulanan.
           </p>
@@ -134,31 +135,20 @@ export default function Payroll() {
       )}
 
       {/* Ringkasan perhitungan */}
-      <div className="p-px rounded-2xl bg-gradient-to-br from-turmeric/30 via-line to-chili/20 shadow-inner">
-        <div className="bg-surface rounded-2xl p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Sparkles size={18} className="text-turmeric" />
-            <h3 className="font-display text-lg">
-              Perhitungan {labelBulan(periode)}
-            </h3>
+      <div className="overflow-hidden rounded-2xl border border-turmeric/25 bg-gradient-to-br from-turmeric/15 via-surface to-surface-2/30 shadow-xl shadow-black/10">
+        <div className="relative p-6">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-turmeric/10 blur-3xl" />
+          <div className="relative mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div><p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Payroll overview</p><h3 className="font-display text-xl">Perhitungan {labelBulan(periode)}</h3></div>
+            <span className="flex items-center gap-1.5 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric"><Sparkles size={12} /> Periode aktif</span>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="bg-surface-2/60 rounded-xl p-3.5">
-              <p className="ledger-num text-xl font-medium">{formatRupiah(hitung.pemasukan)}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">Pemasukan</p>
-            </div>
-            <div className="bg-surface-2/60 rounded-xl p-3.5">
-              <p className="ledger-num text-xl font-medium">{formatRupiah(hitung.pengeluaran)}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">Pengeluaran</p>
-            </div>
-            <div className="bg-surface-2/60 rounded-xl p-3.5">
-              <p className="ledger-num text-xl font-medium">{formatRupiah(hitung.totalGajiPokok)}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">Total Gaji Pokok</p>
-            </div>
-            <div className="bg-surface-2/60 rounded-xl p-3.5">
-              <p className="ledger-num text-xl font-medium text-herb">{formatRupiah(hitung.bonusPerOrang)}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">Bonus / Karyawan</p>
-            </div>
+          <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: 'Pemasukan', value: hitung.pemasukan, color: 'text-herb', icon: ArrowUpRight },
+              { label: 'Pengeluaran', value: hitung.pengeluaran, color: 'text-chili', icon: ArrowUpRight },
+              { label: 'Total gaji pokok', value: hitung.totalGajiPokok, color: 'text-ink', icon: WalletCards },
+              { label: 'Bonus / karyawan', value: hitung.bonusPerOrang, color: 'text-turmeric', icon: CircleDollarSign },
+            ].map(({ label, value, color, icon: Icon }) => <div key={label} className="rounded-xl border border-line bg-surface-2/60 p-3.5"><div className="flex items-center justify-between"><p className={`ledger-num text-lg font-bold ${color}`}>{formatRupiah(value)}</p><Icon size={14} className={color} /></div><p className="mt-1 text-[10px] text-ink-faint">{label}</p></div>)}
           </div>
           {hitung.untungBersih - hitung.totalGajiPokok < 0 && (
             <p className="rounded-xl bg-turmeric/10 border border-turmeric/20 text-turmeric px-4 py-2.5 text-sm mt-4">
@@ -181,8 +171,8 @@ export default function Payroll() {
       </div>
 
       {/* Daftar karyawan */}
-      <div className="flex items-center justify-between mt-8">
-        <h3 className="font-display text-lg">Karyawan Aktif</h3>
+      <div className="flex items-end justify-between mt-8">
+        <div><p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-ink-faint">Tim aktif</p><h3 className="font-display text-xl">Daftar karyawan</h3></div>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
@@ -242,7 +232,9 @@ export default function Payroll() {
           description="Tambahkan karyawan dengan gaji pokoknya dulu."
         />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface/60 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface/60 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4"><div><p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-ink-faint">Payroll aktif</p><p className="text-xs text-ink-muted">{karyawan.length} orang menerima gaji periode ini</p></div><Users size={18} className="text-turmeric" /></div>
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-line text-xs uppercase tracking-wider text-ink-faint">
@@ -280,6 +272,7 @@ export default function Payroll() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
