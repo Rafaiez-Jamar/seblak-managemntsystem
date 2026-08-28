@@ -278,6 +278,11 @@ export default function Finance() {
           <div className="relative flex items-start justify-between"><div><p className="text-xs text-ink-muted">Saldo bersih berjalan</p><p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-faint">Pemasukan dikurangi pengeluaran</p></div><span className="rounded-xl bg-herb-bg p-2.5 text-herb"><CircleDollarSign size={19} /></span></div>
           <p className={`ledger-num relative mt-8 text-3xl font-bold ${summary.bersih >= 0 ? 'text-herb' : 'text-chili'}`}>{formatRupiah(summary.bersih)}</p>
           <p className="relative mt-2 text-xs text-ink-faint">{summary.bersih >= 0 ? 'Posisi keuangan masih positif.' : 'Pengeluaran lebih besar dari pemasukan.'}</p>
+          <div className="relative mt-5">
+            <div className="mb-2 flex items-center justify-between text-[10px]"><span className="text-ink-faint">Rasio pengeluaran</span><span className="font-medium text-ink-muted">{summary.pemasukan > 0 ? Math.round((summary.pengeluaran / summary.pemasukan) * 100) : 0}% dari pemasukan</span></div>
+            <div className="flex h-2 overflow-hidden rounded-full bg-surface-3/80"><div className="h-full bg-herb" style={{ width: `${summary.pemasukan > 0 ? Math.min(100, (summary.pemasukan / Math.max(summary.pemasukan, summary.pengeluaran)) * 100) : 0}%` }} /><div className="h-full bg-chili" style={{ width: `${summary.pemasukan > 0 ? Math.min(100, (summary.pengeluaran / Math.max(summary.pemasukan, summary.pengeluaran)) * 100) : 0}%` }} /></div>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-ink-faint"><span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-herb" />Pemasukan</span><span className={`font-medium ${summary.bersih >= 0 ? 'text-herb' : 'text-chili'}`}>{summary.bersih >= 0 ? 'Saldo positif' : 'Perlu perhatian'}</span></div>
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {[

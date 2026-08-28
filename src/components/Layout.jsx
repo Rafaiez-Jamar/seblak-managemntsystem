@@ -71,16 +71,17 @@ function SidebarContent({ onNavigate }) {
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-[#17151d] via-surface to-base">
       {/* Top accent line */}
-      <div className="h-1 w-full bg-gradient-to-r from-chili via-turmeric to-herb" />
+      <div className="h-0.5 w-full bg-chili/70" />
 
       {/* Logo */}
       <div className="flex items-center gap-3 border-b border-line px-5 py-6">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-chili via-chili-hover to-turmeric text-sm font-bold text-white shadow-lg shadow-chili/30">
-          S
+        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-chili/40 bg-gradient-to-br from-chili/25 via-surface-2 to-turmeric/15 text-[11px] font-bold tracking-tight text-ink shadow-lg shadow-chili/10">
+          SH
+          <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-[#17151d] bg-turmeric" />
         </span>
         <div className="leading-tight">
-          <p className="font-display text-base text-ink">Seblak <span className="text-chili">HQ</span></p>
-          <p className="mt-0.5 text-[9px] uppercase tracking-[0.2em] text-turmeric/80">Manajemen Internal</p>
+          <p className="font-display text-[17px] tracking-tight text-ink">Seblak <span className="text-chili">HQ</span></p>
+          <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.22em] text-ink-faint">Operational desk</p>
         </div>
       </div>
 
@@ -172,9 +173,9 @@ export default function Layout({ children }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Header glassmorphism */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-[#11131d]/85 px-4 py-4 backdrop-blur-md md:px-8">
-          <div><PageTitle /><p className="mt-0.5 hidden text-[10px] uppercase tracking-[0.18em] text-ink-faint sm:block">Pusat kontrol operasional</p></div>
-          <div className="flex items-center gap-2"><NotificationButton /><span className="hidden items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-turmeric" /> Seblak HQ</span></div>
+        <header className="sticky top-0 z-30 flex min-h-[4.5rem] items-center justify-between gap-3 border-b border-line bg-[#11131d]/90 px-4 backdrop-blur-md md:px-8">
+          <div className="flex items-center gap-3"><span className="hidden h-8 w-1 rounded-full bg-gradient-to-b from-chili to-turmeric sm:block" /><PageTitle /></div>
+          <NotificationButton />
         </header>
         <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">{children}</main>
       </div>

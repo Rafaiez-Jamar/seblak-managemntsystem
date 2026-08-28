@@ -178,8 +178,9 @@ export default function Dashboard() {
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div>
-        <h2 className="font-display text-2xl">Selamat datang kembali 👋</h2>
-        <p className="mt-1 text-sm text-ink-muted">Ringkasan operasional Seblak HQ bulan ini.</p>
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Overview bisnis</p>
+        <h2 className="font-display text-3xl">Ringkasan operasional</h2>
+        <p className="mt-1 text-sm text-ink-muted">Pantau keuangan, persediaan, dan tim Seblak HQ dalam satu tempat.</p>
       </div>
 
       {/* Balance + chart */}

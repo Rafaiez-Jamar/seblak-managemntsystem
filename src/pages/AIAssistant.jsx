@@ -1,4 +1,4 @@
-import { Bot, LoaderCircle, Send, Sparkles, User, Zap } from 'lucide-react'
+import { ArrowUpRight, BarChart3, Bot, CircleDollarSign, Database, LoaderCircle, PackageSearch, Send, Sparkles, User, Users, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatRupiah } from '../lib/helpers'
@@ -232,94 +232,47 @@ export default function AIAssistant() {
   }
 
   const isReady = !loadingKonteks && apiKeyAda
-  const showSuggestions = messages.length === 1 && isReady
-
   return (
-    <div className="flex h-[calc(100svh-8.5rem)] flex-col gap-4 md:h-[calc(100svh-9.5rem)]">
+    <div className="space-y-5 animate-slide-up">
 
-      {/* Status bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Animated glow dot */}
-          <span className="relative flex h-2 w-2">
-            <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${isReady ? 'bg-herb animate-ping' : 'bg-turmeric animate-pulse'}`} />
-            <span className={`relative inline-flex h-2 w-2 rounded-full ${isReady ? 'bg-herb' : 'bg-turmeric'}`} />
-          </span>
-          <p className="text-xs text-ink-muted">
-            {loadingKonteks ? 'Memuat data keuangan...' : apiKeyAda ? 'Terhubung · data bulan ini sudah dimuat' : '⚠️ API key belum diset'}
-          </p>
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Pusat insight</p>
+          <h2 className="font-display text-3xl">Asisten AI</h2>
+          <p className="mt-1 max-w-xl text-sm text-ink-muted">Teman analisis untuk membantu membaca angka, stok, dan payroll Seblak HQ.</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-ink-faint">
-          <Zap size={11} className="text-turmeric" />
-          <span>Gemini</span>
-        </div>
+        <div className="flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-2 text-xs text-ink-muted"><span className={`relative flex h-2 w-2`}><span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${isReady ? 'bg-herb animate-ping' : 'bg-turmeric animate-pulse'}`} /><span className={`relative inline-flex h-2 w-2 rounded-full ${isReady ? 'bg-herb' : 'bg-turmeric'}`} /></span>{loadingKonteks ? 'Membaca data...' : apiKeyAda ? 'AI siap membantu' : 'API key belum diset'}</div>
       </div>
 
-      {/* Chat container */}
-      <div className="relative flex-1 overflow-hidden rounded-2xl border border-line bg-surface">
-        {/* Ambient glow top */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-chili/5 to-transparent" />
+      <div className="grid min-h-[calc(100svh-15rem)] grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <section className="flex min-h-[620px] flex-col overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-surface via-surface/95 to-surface-2/20 shadow-xl shadow-black/10">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-chili-bg text-chili"><Bot size={18} /></span><div><h3 className="font-display text-base">Ruang percakapan</h3><p className="text-[10px] text-ink-faint">Konteks diperbarui dari data bulan berjalan</p></div></div><div className="flex items-center gap-1.5 text-[10px] text-ink-faint"><Zap size={11} className="text-turmeric" /> Gemini</div></div>
 
-        {/* Messages */}
-        <div className="relative h-full overflow-y-auto p-5 space-y-5">
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} message={msg} isLatest={i === messages.length - 1} />
-          ))}
-          {sending && <TypingIndicator />}
-          <div ref={bottomRef} />
-        </div>
+          <div className="relative flex-1 overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-chili/10 to-transparent" />
+            <div className="relative h-full min-h-[430px] overflow-y-auto p-5 space-y-5">
+              {messages.map((msg, i) => <MessageBubble key={i} message={msg} isLatest={i === messages.length - 1} />)}
+              {sending && <TypingIndicator />}
+              <div ref={bottomRef} />
+            </div>
+          </div>
+
+          {/* Composer */}
+          <div className="border-t border-line bg-base/20 p-4">
+            <form onSubmit={(e) => { e.preventDefault(); sendMessage(input) }} className="flex items-center gap-3">
+              <div className="relative flex-1"><input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={loadingKonteks ? 'Memuat data...' : apiKeyAda ? 'Tulis pertanyaan tentang bisnis kamu...' : 'Set VITE_GEMINI_API_KEY di .env dulu'} disabled={!isReady || sending} className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-faint transition-all focus:border-chili/50 focus:ring-2 focus:ring-chili/10 disabled:opacity-40" /><span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-[10px] text-ink-faint sm:block">Enter untuk kirim</span></div>
+              <button type="submit" disabled={sending || !input.trim() || !isReady} className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-chili shadow-lg shadow-chili/25 transition-all hover:bg-chili-hover hover:shadow-chili/40 disabled:opacity-40 disabled:shadow-none" aria-label="Kirim">{sending ? <LoaderCircle size={16} className="animate-spin text-white" /> : <Send size={16} className="text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />}</button>
+            </form>
+          </div>
+        </section>
+
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-line bg-surface/60 p-5 backdrop-blur-sm"><div className="mb-4 flex items-center justify-between"><div><p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-ink-faint">Sumber analisis</p><h3 className="font-display text-lg">Data bisnis</h3></div><Database size={18} className="text-turmeric" /></div><div className="space-y-2.5"><div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2/40 p-3"><span className="rounded-lg bg-herb-bg p-2 text-herb"><CircleDollarSign size={15} /></span><span><strong className="block text-xs text-ink">Keuangan</strong><small className="text-[10px] text-ink-faint">Omzet, biaya, dan saldo bersih</small></span></div><div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2/40 p-3"><span className="rounded-lg bg-chili-bg p-2 text-chili"><PackageSearch size={15} /></span><span><strong className="block text-xs text-ink">Persediaan</strong><small className="text-[10px] text-ink-faint">Stok bahan dan barang masuk</small></span></div><div className="flex items-center gap-3 rounded-xl border border-line bg-surface-2/40 p-3"><span className="rounded-lg bg-turmeric-bg p-2 text-turmeric"><Users size={15} /></span><span><strong className="block text-xs text-ink">Karyawan</strong><small className="text-[10px] text-ink-faint">Data payroll dan gaji pokok</small></span></div></div></div>
+
+          <div className="rounded-2xl border border-line bg-surface/60 p-5 backdrop-blur-sm"><div className="mb-4 flex items-center justify-between"><div><p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-ink-faint">Mulai dari sini</p><h3 className="font-display text-lg">Insight cepat</h3></div><BarChart3 size={18} className="text-chili" /></div><div className="space-y-2">{SUGGESTIONS.slice(0, 4).map((suggestion) => <button key={suggestion} type="button" onClick={() => sendMessage(suggestion)} disabled={!isReady || sending} className="group flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-2/30 px-3 py-2.5 text-left text-xs text-ink-muted transition-colors hover:border-chili/30 hover:bg-chili-bg hover:text-ink disabled:opacity-40"><span>{suggestion}</span><ArrowUpRight size={13} className="shrink-0 text-ink-faint transition-colors group-hover:text-chili" /></button>)}</div></div>
+        </aside>
       </div>
-
-      {/* Suggestion chips */}
-      {showSuggestions && (
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => sendMessage(s)}
-              className="group flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs text-ink-muted transition-all hover:border-chili/40 hover:bg-chili-bg hover:text-ink"
-            >
-              <Sparkles size={10} className="text-turmeric opacity-0 transition-opacity group-hover:opacity-100" />
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Input area */}
-      <form
-        onSubmit={(e) => { e.preventDefault(); sendMessage(input) }}
-        className="relative flex items-center gap-3"
-      >
-        {/* Glow ring saat focus */}
-        <div className="relative flex-1">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              loadingKonteks ? 'Memuat data...'
-              : apiKeyAda ? 'Tanya soal keuangan, gaji, atau stok...'
-              : 'Set VITE_GEMINI_API_KEY di .env dulu'
-            }
-            disabled={!isReady || sending}
-            className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-faint transition-all focus:border-chili/50 focus:ring-2 focus:ring-chili/10 disabled:opacity-40"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={sending || !input.trim() || !isReady}
-          className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-chili shadow-lg shadow-chili/25 transition-all hover:bg-chili-hover hover:shadow-chili/40 disabled:opacity-40 disabled:shadow-none"
-          aria-label="Kirim"
-        >
-          {sending
-            ? <LoaderCircle size={16} className="animate-spin text-white" />
-            : <Send size={16} className="text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          }
-        </button>
-      </form>
 
       {/* Keyframe styles */}
       <style>{`
