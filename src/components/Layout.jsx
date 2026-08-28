@@ -36,14 +36,17 @@ function PageTitle() {
 function NotificationButton() {
   const { user } = useAuth()
   const [state, setState] = useState('idle')
+  const [error, setError] = useState('')
 
   async function handleEnable() {
     setState('loading')
+    setError('')
     try {
       await enablePushNotifications(user.id)
       setState('enabled')
     } catch (error) {
-      setState(error.message)
+      setState('idle')
+      setError(error.message || 'Notifikasi gagal diaktifkan.')
     }
   }
 
@@ -52,9 +55,12 @@ function NotificationButton() {
   }
 
   return (
-    <button type="button" onClick={handleEnable} disabled={state === 'loading'} title={state !== 'idle' ? state : 'Aktifkan notifikasi'} className="flex items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric transition-colors hover:border-turmeric/40 disabled:opacity-60">
-      <Bell size={12} /> {state === 'loading' ? 'Mengaktifkan...' : 'Aktifkan notifikasi'}
-    </button>
+    <div className="relative flex items-center gap-2">
+      <button type="button" onClick={handleEnable} disabled={state === 'loading'} title="Aktifkan notifikasi" className="flex items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric transition-colors hover:border-turmeric/40 disabled:opacity-60">
+        <Bell size={12} /> {state === 'loading' ? 'Mengaktifkan...' : 'Aktifkan notifikasi'}
+      </button>
+      {error && <span role="alert" className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-chili/30 bg-surface px-3 py-2 text-[10px] leading-relaxed text-chili shadow-xl">{error}</span>}
+    </div>
   )
 }
 

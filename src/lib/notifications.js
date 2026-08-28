@@ -1,5 +1,13 @@
 import { supabase } from './supabase'
 
+function withTimeout(promise, message, milliseconds = 10000) {
+  let timeoutId
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), milliseconds)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId))
+}
+
 function urlBase64ToUint8Array(value) {
   const padding = '='.repeat((4 - (value.length % 4)) % 4)
   const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -14,18 +22,33 @@ export async function enablePushNotifications(userId) {
   const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
   if (!vapidKey) throw new Error('VITE_VAPID_PUBLIC_KEY belum diset di .env.')
 
-  const permission = await Notification.requestPermission()
+  const permission = await withTimeout(
+    Notification.requestPermission(),
+    'Permintaan izin notifikasi tidak mendapat respons.',
+  )
   if (permission !== 'granted') throw new Error('Izin notifikasi tidak diberikan.')
 
-  const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/push/' })
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidKey),
-  })
+  const registration = await withTimeout(
+    navigator.serviceWorker.register('/push-sw.js', { scope: '/push/' }),
+    'Service worker belum siap. Refresh halaman lalu coba lagi.',
+  )
+  let subscription = await registration.pushManager.getSubscription()
+  if (!subscription) {
+    subscription = await withTimeout(
+      registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      }),
+      'Browser gagal membuat subscription notifikasi.',
+    )
+  }
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
-    { user_id: userId, subscription: subscription.toJSON() },
-    { onConflict: 'user_id' },
+  const { error } = await withTimeout(
+    supabase.from('push_subscriptions').upsert(
+      { user_id: userId, subscription: subscription.toJSON() },
+      { onConflict: 'user_id' },
+    ),
+    'Supabase tidak merespons. Pastikan tabel push_subscriptions sudah dibuat.',
   )
   if (error) throw new Error(error.message)
   return subscription
