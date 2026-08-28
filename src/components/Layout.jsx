@@ -1,5 +1,6 @@
 import {
   Bot,
+  Bell,
   LayoutDashboard,
   LogOut,
   PackagePlus,
@@ -7,7 +8,9 @@ import {
   Wallet,
 } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { enablePushNotifications } from '../lib/notifications'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -27,6 +30,31 @@ function PageTitle() {
       {active?.label ?? 'Dasbor'}
       <span className="ml-2 text-sm font-normal text-ink-faint">· Seblak HQ</span>
     </h1>
+  )
+}
+
+function NotificationButton() {
+  const { user } = useAuth()
+  const [state, setState] = useState('idle')
+
+  async function handleEnable() {
+    setState('loading')
+    try {
+      await enablePushNotifications(user.id)
+      setState('enabled')
+    } catch (error) {
+      setState(error.message)
+    }
+  }
+
+  if (state === 'enabled') {
+    return <span className="hidden items-center gap-2 rounded-full border border-herb/20 bg-herb-bg px-3 py-1.5 text-[10px] text-herb sm:flex"><Bell size={12} /> Notifikasi aktif</span>
+  }
+
+  return (
+    <button type="button" onClick={handleEnable} disabled={state === 'loading'} title={state !== 'idle' ? state : 'Aktifkan notifikasi'} className="flex items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric transition-colors hover:border-turmeric/40 disabled:opacity-60">
+      <Bell size={12} /> {state === 'loading' ? 'Mengaktifkan...' : 'Aktifkan notifikasi'}
+    </button>
   )
 }
 
@@ -140,7 +168,7 @@ export default function Layout({ children }) {
         {/* Header glassmorphism */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-line bg-[#11131d]/85 px-4 py-4 backdrop-blur-md md:px-8">
           <div><PageTitle /><p className="mt-0.5 hidden text-[10px] uppercase tracking-[0.18em] text-ink-faint sm:block">Pusat kontrol operasional</p></div>
-          <span className="hidden items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-turmeric" /> Seblak HQ</span>
+          <div className="flex items-center gap-2"><NotificationButton /><span className="hidden items-center gap-2 rounded-full border border-turmeric/20 bg-turmeric-bg px-3 py-1.5 text-[10px] text-turmeric sm:flex"><span className="h-1.5 w-1.5 rounded-full bg-turmeric" /> Seblak HQ</span></div>
         </header>
         <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">{children}</main>
       </div>
