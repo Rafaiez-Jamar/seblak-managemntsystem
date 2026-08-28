@@ -1,5 +1,5 @@
 import CurrencyInput from '../components/CurrencyInput'
-import { Download, Plus, TrendingDown, TrendingUp, Wallet, X, Pencil, Trash2 } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, CircleDollarSign, Download, Plus, TrendingDown, TrendingUp, Wallet, X, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import EmptyState from '../components/EmptyState'
 import { supabase } from '../lib/supabase'
@@ -17,21 +17,33 @@ const KATEGORI_LABEL = {
   lainnya: 'Lainnya',
 }
 
+const METODE_PEMBAYARAN = [
+  { value: 'cash', label: 'Cash / Tunai' },
+  { value: 'qris', label: 'QRIS' },
+  { value: 'transfer', label: 'Transfer Bank' },
+  { value: 'debit', label: 'Kartu Debit' },
+  { value: 'kredit', label: 'Kartu Kredit' },
+  { value: 'ewallet', label: 'E-Wallet' },
+  { value: 'lainnya', label: 'Lainnya' },
+]
+
 const EMPTY_FORM = {
   tanggal: new Date().toISOString().slice(0, 10),
   jenis: 'pemasukan',
   kategori: 'penjualan',
+  metode_pembayaran: 'cash',
   jumlah: '',
   keterangan: '',
 }
 
 function toCsv(rows) {
-  const header = ['Tanggal', 'Jenis', 'Kategori', 'Jumlah', 'Keterangan']
+  const header = ['Tanggal', 'Jenis', 'Kategori', 'Metode Pembayaran', 'Jumlah', 'Keterangan']
   const lines = rows.map((r) =>
     [
       r.tanggal,
       r.jenis,
       KATEGORI_LABEL[r.kategori] ?? r.kategori,
+      METODE_PEMBAYARAN.find((method) => method.value === r.metode_pembayaran)?.label ?? r.metode_pembayaran ?? 'Belum diisi',
       r.jumlah,
       (r.keterangan ?? '').replace(/,/g, ' '),
     ].join(',')
@@ -130,6 +142,24 @@ export default function Finance() {
     }
   }, [summary.pemasukan, summary.pengeluaran, totalGajiKaryawan])
 
+  const periodStats = useMemo(() => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startOfWeek = new Date(startOfToday)
+    const day = startOfWeek.getDay()
+    startOfWeek.setDate(startOfWeek.getDate() - (day === 0 ? 6 : day - 1))
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    function calculate(startDate) {
+      const transactions = items.filter((item) => new Date(`${item.tanggal}T00:00:00`) >= startDate)
+      const pemasukan = transactions.filter((item) => item.jenis === 'pemasukan').reduce((sum, item) => sum + Number(item.jumlah), 0)
+      const pengeluaran = transactions.filter((item) => item.jenis === 'pengeluaran').reduce((sum, item) => sum + Number(item.jumlah), 0)
+      return { omzet: pemasukan, pengeluaran, bersih: pemasukan - pengeluaran }
+    }
+
+    return { hari: calculate(startOfToday), minggu: calculate(startOfWeek), bulan: calculate(startOfMonth) }
+  }, [items])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
@@ -139,6 +169,7 @@ export default function Finance() {
       tanggal: form.tanggal,
       jenis: form.jenis,
       kategori: form.kategori,
+      metode_pembayaran: form.metode_pembayaran,
       jumlah: Number(form.jumlah),
       keterangan: form.keterangan.trim() || null,
     }
@@ -187,9 +218,10 @@ export default function Finance() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl">Keuangan</h2>
+          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Pusat keuangan</p>
+          <h2 className="font-display text-3xl">Keuangan</h2>
           <p className="mt-1 text-sm text-ink-muted">
             Pemasukan dan pengeluaran rumah makan.
           </p>
@@ -215,27 +247,24 @@ export default function Finance() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 stagger">
-        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-5 hover:border-line-strong hover:shadow-xl transition-all">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-herb/20 to-herb/5 text-herb border border-herb/20">
-            <TrendingUp size={18} strokeWidth={1.75} />
-          </span>
-          <p className="ledger-num mt-4 text-2xl">{formatRupiah(summary.pemasukan)}</p>
-          <p className="mt-1 text-xs text-ink-muted">Total Pemasukan</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_1.9fr] stagger">
+        <div className="relative overflow-hidden rounded-2xl border border-herb/25 bg-gradient-to-br from-herb/20 via-surface to-surface-2/40 p-6 shadow-xl shadow-black/20">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-herb/15 blur-3xl" />
+          <div className="relative flex items-start justify-between"><div><p className="text-xs text-ink-muted">Saldo bersih berjalan</p><p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-ink-faint">Pemasukan dikurangi pengeluaran</p></div><span className="rounded-xl bg-herb-bg p-2.5 text-herb"><CircleDollarSign size={19} /></span></div>
+          <p className={`ledger-num relative mt-8 text-3xl font-bold ${summary.bersih >= 0 ? 'text-herb' : 'text-chili'}`}>{formatRupiah(summary.bersih)}</p>
+          <p className="relative mt-2 text-xs text-ink-faint">{summary.bersih >= 0 ? 'Posisi keuangan masih positif.' : 'Pengeluaran lebih besar dari pemasukan.'}</p>
         </div>
-        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-5 hover:border-line-strong hover:shadow-xl transition-all">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-chili/20 to-chili/5 text-chili border border-chili/20">
-            <TrendingDown size={18} strokeWidth={1.75} />
-          </span>
-          <p className="ledger-num mt-4 text-2xl">{formatRupiah(summary.pengeluaran)}</p>
-          <p className="mt-1 text-xs text-ink-muted">Total Pengeluaran</p>
-        </div>
-        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-5 hover:border-line-strong hover:shadow-xl transition-all">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-turmeric/20 to-turmeric/5 text-turmeric border border-turmeric/20">
-            <Wallet size={18} strokeWidth={1.75} />
-          </span>
-          <p className="ledger-num mt-4 text-2xl">{formatRupiah(summary.bersih)}</p>
-          <p className="mt-1 text-xs text-ink-muted">Untung Bersih</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { label: 'Total pemasukan', value: summary.pemasukan, icon: TrendingUp, iconClass: 'bg-herb-bg text-herb', textClass: 'text-herb', IconMark: ArrowUpRight },
+            { label: 'Total pengeluaran', value: summary.pengeluaran, icon: TrendingDown, iconClass: 'bg-chili-bg text-chili', textClass: 'text-chili', IconMark: ArrowDownRight },
+            { label: 'Margin bersih', value: summary.pemasukan > 0 ? `${Math.round((summary.bersih / summary.pemasukan) * 100)}%` : '0%', icon: Wallet, iconClass: 'bg-turmeric-bg text-turmeric', textClass: 'text-turmeric', IconMark: CircleDollarSign, isText: true },
+          ].map(({ label, value, icon: Icon, iconClass, textClass, IconMark, isText }) => (
+            <div key={label} className={`relative overflow-hidden rounded-2xl border border-line bg-surface/60 p-5 backdrop-blur-sm`}>
+              <div className="flex items-center justify-between"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconClass}`}><Icon size={17} /></span><IconMark size={15} className={textClass} /></div>
+              <p className={`ledger-num mt-7 text-xl font-bold ${textClass}`}>{isText ? value : formatRupiah(value)}</p><p className="mt-1 text-xs text-ink-faint">{label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -292,74 +321,15 @@ export default function Finance() {
         </div>
       )}
 
-      {/* Analisis Balik Modal (Break-Even) */}
+      {/* Ringkasan periode */}
       {!loading && (
-        <div className="rounded-2xl border border-line bg-surface/60 backdrop-blur-sm p-6 space-y-4">
-          <div>
-            <h3 className="font-display text-[17px]">📈 Analisis Balik Modal (Break-Even)</h3>
-            <p className="text-xs text-ink-muted mt-0.5">Analisis rata-rata omzet untuk menutup beban operasional + gaji</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {/* Harian */}
-            <div className="rounded-xl bg-surface-2/40 border border-line p-4 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-ink-muted">Analisis Harian</span>
-                {analisisBEP.diffHarian >= 0 ? (
-                  <span className="rounded bg-herb-bg px-2 py-0.5 text-[10px] font-bold text-herb">BEP ✓</span>
-                ) : (
-                  <span className="rounded bg-chili-bg px-2 py-0.5 text-[10px] font-bold text-chili">Defisit ⚠</span>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-ink-faint">Rata-rata Omzet: <span className="ledger-num text-ink font-medium">{formatRupiah(analisisBEP.avgHarian)}/hari</span></p>
-                <p className="text-xs text-ink-faint">Target Minimal: <span className="ledger-num text-ink font-medium">{formatRupiah(analisisBEP.targetHarian)}/hari</span></p>
-              </div>
-              <p className={`text-[11px] font-medium pt-1 ${analisisBEP.diffHarian >= 0 ? 'text-herb' : 'text-chili'}`}>
-                {analisisBEP.diffHarian >= 0 
-                  ? `Surplus +${formatRupiah(analisisBEP.diffHarian)}/hari` 
-                  : `Kurang ${formatRupiah(Math.abs(analisisBEP.diffHarian))}/hari`}
-              </p>
-            </div>
-
-            {/* Mingguan */}
-            <div className="rounded-xl bg-surface-2/40 border border-line p-4 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-ink-muted">Analisis Mingguan</span>
-                {analisisBEP.diffMingguan >= 0 ? (
-                  <span className="rounded bg-herb-bg px-2 py-0.5 text-[10px] font-bold text-herb">BEP ✓</span>
-                ) : (
-                  <span className="rounded bg-chili-bg px-2 py-0.5 text-[10px] font-bold text-chili">Defisit ⚠</span>
-                )}
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-ink-faint">Rata-rata Omzet: <span className="ledger-num text-ink font-medium">{formatRupiah(analisisBEP.avgMingguan)}/minggu</span></p>
-                <p className="text-xs text-ink-faint">Target Minimal: <span className="ledger-num text-ink font-medium">{formatRupiah(analisisBEP.targetMingguan)}/minggu</span></p>
-              </div>
-              <p className={`text-[11px] font-medium pt-1 ${analisisBEP.diffMingguan >= 0 ? 'text-herb' : 'text-chili'}`}>
-                {analisisBEP.diffMingguan >= 0 
-                  ? `Surplus +${formatRupiah(analisisBEP.diffMingguan)}/minggu` 
-                  : `Kurang ${formatRupiah(Math.abs(analisisBEP.diffMingguan))}/minggu`}
-              </p>
-            </div>
-
-            {/* Sisa Hari */}
-            <div className="rounded-xl bg-surface-2/40 border border-line p-4 space-y-2">
-              <span className="text-xs font-semibold text-ink-muted">Proyeksi Sisa Bulan Ini</span>
-              <div className="space-y-1 text-xs text-ink-faint">
-                <p>Hari Berlalu: <span className="font-medium text-ink">{analisisBEP.hariIni} / ${analisisBEP.totalHari} Hari</span></p>
-                <p>Sisa Target Bulanan: <span className="ledger-num font-medium text-ink">{formatRupiah(analisisBEP.sisaTargetBulan)}</span></p>
-              </div>
-              {analisisBEP.sisaTargetBulan > 0 ? (
-                <div className="text-[11px] text-turmeric pt-1">
-                  Butuh <span className="font-semibold ledger-num">{formatRupiah(analisisBEP.targetHarianSisa)}</span>/hari di sisa {analisisBEP.sisa} hari ini untuk balik modal.
-                </div>
-              ) : (
-                <div className="text-[11px] text-herb font-semibold pt-1">
-                  Target modal bulanan sudah tercapai! ✓
-                </div>
-              )}
-            </div>
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface/60 backdrop-blur-sm">
+          <div className="border-b border-line px-5 py-5 md:px-6"><p className="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-turmeric">Performa penjualan</p><h3 className="font-display text-lg">Omzet &amp; untung</h3><p className="mt-1 text-xs text-ink-muted">Perbandingan pemasukan, pengeluaran, dan hasil bersih berdasarkan periode.</p></div>
+          <div className="grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            {[['hari', 'Hari ini', 'Sejak 00:00'], ['minggu', 'Minggu ini', 'Senin sampai hari ini'], ['bulan', 'Bulan ini', 'Periode berjalan']].map(([key, title, subtitle]) => {
+              const stats = periodStats[key]
+              return <div key={key} className="p-5 md:p-6"><div className="flex items-center justify-between"><div><h4 className="font-display text-base">{title}</h4><p className="mt-1 text-[10px] text-ink-faint">{subtitle}</p></div><span className={`rounded-full border px-2 py-1 text-[10px] font-medium ${stats.bersih >= 0 ? 'border-herb/20 bg-herb-bg text-herb' : 'border-chili/20 bg-chili-bg text-chili'}`}>{stats.bersih >= 0 ? 'Untung' : 'Rugi'}</span></div><div className="mt-6 space-y-3"><div className="flex items-center justify-between text-xs"><span className="text-ink-faint">Omzet</span><span className="ledger-num font-semibold text-herb">{formatRupiah(stats.omzet)}</span></div><div className="flex items-center justify-between text-xs"><span className="text-ink-faint">Pengeluaran</span><span className="ledger-num font-semibold text-chili">{formatRupiah(stats.pengeluaran)}</span></div><div className="flex items-center justify-between border-t border-line pt-3 text-xs"><span className="font-medium text-ink-muted">Untung bersih</span><span className={`ledger-num font-bold ${stats.bersih >= 0 ? 'text-ink' : 'text-chili'}`}>{formatRupiah(stats.bersih)}</span></div></div></div>
+            })}
           </div>
         </div>
       )}
@@ -414,6 +384,17 @@ export default function Finance() {
                     {KATEGORI_LABEL[k]}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs text-ink-muted">Metode Pembayaran</label>
+              <select
+                value={form.metode_pembayaran}
+                onChange={(e) => setForm({ ...form, metode_pembayaran: e.target.value })}
+                className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm outline-none transition-all focus:border-chili/50 focus:ring-2 focus:ring-chili/10"
+              >
+                {METODE_PEMBAYARAN.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
               </select>
             </div>
 
@@ -479,6 +460,7 @@ export default function Finance() {
               <tr className="border-b border-line text-xs uppercase tracking-wider text-ink-faint">
                 <th className="px-4 py-4 font-normal">Tanggal</th>
                 <th className="px-4 py-4 font-normal">Kategori</th>
+                <th className="px-4 py-4 font-normal">Metode</th>
                 <th className="px-4 py-4 font-normal">Keterangan</th>
                 <th className="px-4 py-4 font-normal text-right">Jumlah</th>
                 <th className="px-4 py-4" />
@@ -493,6 +475,11 @@ export default function Finance() {
                   <td className="px-4 py-4">
                     <span className="rounded-full px-3 py-1 text-xs font-medium bg-surface-3 text-ink-muted">
                       {KATEGORI_LABEL[item.kategori] ?? item.kategori}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="inline-flex rounded-lg border border-line bg-surface-2 px-2.5 py-1 text-xs text-ink-muted">
+                      {METODE_PEMBAYARAN.find((method) => method.value === item.metode_pembayaran)?.label ?? item.metode_pembayaran ?? 'Belum diisi'}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-ink-muted">{item.keterangan ?? '—'}</td>
@@ -513,6 +500,7 @@ export default function Finance() {
                             tanggal: item.tanggal,
                             jenis: item.jenis,
                             kategori: item.kategori,
+                            metode_pembayaran: item.metode_pembayaran ?? 'cash',
                             jumlah: String(item.jumlah),
                             keterangan: item.keterangan ?? '',
                           })
